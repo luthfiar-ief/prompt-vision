@@ -10,17 +10,17 @@ export const Route = createFileRoute("/admin/")({
 });
 
 const stats = [
-  { label: "Total Students", value: "2,847", icon: Users, delta: "+24 this month" },
-  { label: "Certificates Minted", value: "12,847", icon: FileCheck2, delta: "+312 this month" },
-  { label: "Pending Issuance", value: "47", icon: Clock, delta: "Across 3 batches" },
-  { label: "Verifications (30d)", value: "8,209", icon: TrendingUp, delta: "+18.4% vs prev." },
+  { label: "Total Mahasiswa", value: "2.847", icon: Users, delta: "+24 bulan ini" },
+  { label: "Sertifikat Terbit", value: "12.847", icon: FileCheck2, delta: "+312 bulan ini" },
+  { label: "Menunggu Penerbitan", value: "47", icon: Clock, delta: "Dalam 3 batch" },
+  { label: "Verifikasi (30h)", value: "8.209", icon: TrendingUp, delta: "+18,4% dari sebelumnya" },
 ];
 
 const recent = [
-  { id: "VC-2024-0042", name: "Bayu Pratama", major: "Electrical Engineering", date: "2024-07-15", status: "Minted" },
-  { id: "VC-2024-0041", name: "Ayu Kartika", major: "Industrial Design", date: "2024-07-15", status: "Minted" },
-  { id: "VC-2024-0040", name: "Reno Saputra", major: "Computer Science", date: "2024-07-14", status: "Pending" },
-  { id: "VC-2024-0039", name: "Dewi Anggraini", major: "Architecture", date: "2024-07-14", status: "Minted" },
+  { id: "VC-2024-0042", name: "Rizky Taufik Hidayat", major: "Teknik Informatika", date: "2024-07-15", status: "Terbit" },
+  { id: "VC-2024-0041", name: "Fanny Rahma Dwiyanti", major: "Teknik Informatika", date: "2024-07-15", status: "Terbit" },
+  { id: "VC-2024-0040", name: "Yusup Eskandar", major: "Teknik Informatika", date: "2024-07-14", status: "Menunggu" },
+  { id: "VC-2024-0039", name: "Sarah Mawla", major: "Teknik Informatika", date: "2024-07-14", status: "Terbit" },
 ];
 
 function AdminOverview() {
@@ -28,10 +28,10 @@ function AdminOverview() {
     <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Registry Overview</h1>
-          <p className="text-sm text-muted-foreground">Issue, manage, and mint student certificates.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Ringkasan Registri</h1>
+          <p className="text-sm text-muted-foreground">Kelola dan terbitkan sertifikat mahasiswa.</p>
         </div>
-        <Button asChild className="gap-2"><Link to="/admin/issue"><Upload className="h-4 w-4" /> Issue Certificate</Link></Button>
+        <Button asChild className="gap-2"><Link to="/admin/issue"><Upload className="h-4 w-4" /> Terbitkan Sertifikat</Link></Button>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -51,17 +51,17 @@ function AdminOverview() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Recent issuances</CardTitle>
-          <Button variant="ghost" size="sm" asChild><Link to="/admin/minted">View all</Link></Button>
+          <CardTitle className="text-base">Penerbitan terbaru</CardTitle>
+          <Button variant="ghost" size="sm" asChild><Link to="/admin/minted">Lihat semua</Link></Button>
         </CardHeader>
         <CardContent className="px-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Certificate ID</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Major</TableHead>
-                <TableHead>Date</TableHead>
+                <TableHead>ID Sertifikat</TableHead>
+                <TableHead>Nama</TableHead>
+                <TableHead>Program Studi</TableHead>
+                <TableHead>Tanggal</TableHead>
                 <TableHead className="text-right">Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -73,7 +73,7 @@ function AdminOverview() {
                   <TableCell className="text-muted-foreground">{r.major}</TableCell>
                   <TableCell className="text-muted-foreground">{r.date}</TableCell>
                   <TableCell className="text-right">
-                    <Badge variant={r.status === "Minted" ? "default" : "secondary"}>{r.status}</Badge>
+                    <Badge variant={r.status === "Terbit" ? "default" : "secondary"}>{r.status}</Badge>
                   </TableCell>
                 </TableRow>
               ))}

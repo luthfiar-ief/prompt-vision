@@ -7,8 +7,8 @@ export const Route = createFileRoute("/about")({
   component: About,
   head: () => ({
     meta: [
-      { title: "About — VeriChain University Registry" },
-      { name: "description", content: "Why our university issues blockchain-backed certificates and how the verification system protects students and employers." },
+      { title: "Tentang — Registri Kampus VeriChain" },
+      { name: "description", content: "Mengapa kampus kami menerbitkan sertifikat berbasis blockchain dan bagaimana sistem verifikasi melindungi mahasiswa serta perusahaan." },
     ],
   }),
 });
@@ -18,17 +18,17 @@ function About() {
     <div className="min-h-screen bg-background">
       <PublicNav />
       <section className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
-        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">A trusted record for every graduate.</h1>
+        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Catatan tepercaya untuk setiap lulusan.</h1>
         <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
-          VeriChain is the official certificate registry of our university. We mint every diploma to a public blockchain so credentials can be verified anywhere in the world — without phone calls, fax machines, or third-party clearinghouses.
+          VeriChain adalah registri sertifikat resmi kampus kami. Setiap ijazah dicatat ke blockchain publik agar dapat diverifikasi di mana saja — tanpa telepon, faks, atau lembaga perantara.
         </p>
 
         <div className="mt-12 grid gap-4 sm:grid-cols-2">
           {[
-            { icon: Shield, t: "Tamper-proof", d: "Records cannot be altered after issuance." },
-            { icon: Database, t: "Permanent registry", d: "Stored on-chain, independent of our servers." },
-            { icon: Lock, t: "Privacy-preserving", d: "Only hashes are public; PII stays with the university." },
-            { icon: Globe, t: "Globally verifiable", d: "Employers anywhere can verify in seconds." },
+            { icon: Shield, t: "Anti-pemalsuan", d: "Data tidak dapat diubah setelah diterbitkan." },
+            { icon: Database, t: "Registri permanen", d: "Tersimpan di blockchain, lepas dari server kami." },
+            { icon: Lock, t: "Menjaga privasi", d: "Hanya hash yang publik; data pribadi tetap di kampus." },
+            { icon: Globe, t: "Verifikasi global", d: "Perusahaan di mana pun dapat memverifikasi dalam hitungan detik." },
           ].map((f, i) => (
             <Card key={i} className="border-border/80">
               <CardContent className="p-6">

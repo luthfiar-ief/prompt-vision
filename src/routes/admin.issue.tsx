@@ -22,11 +22,11 @@ function IssuePage() {
 
   const mint = () => {
     if (!form.name || !form.nim || !form.major || !form.graduation) {
-      toast.error("Please fill all student fields");
+      toast.error("Lengkapi seluruh data mahasiswa");
       return;
     }
     if (!file) {
-      toast.error("Upload the certificate PDF");
+      toast.error("Unggah berkas PDF sertifikat");
       return;
     }
     setMinting(true);
@@ -34,41 +34,41 @@ function IssuePage() {
       const hash = "0x" + Array.from({ length: 8 }, () => Math.random().toString(16).slice(2, 6)).join("");
       setTx(hash);
       setMinting(false);
-      toast.success("Minted to blockchain", { description: hash.slice(0, 18) + "…" });
+      toast.success("Tercatat di blockchain", { description: hash.slice(0, 18) + "…" });
     }, 1600);
   };
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Issue Certificate</h1>
-        <p className="text-sm text-muted-foreground">Add student data, upload the diploma PDF, then mint it to the blockchain.</p>
+        <h1 className="text-2xl font-bold tracking-tight">Terbitkan Sertifikat</h1>
+        <p className="text-sm text-muted-foreground">Isi data mahasiswa, unggah PDF ijazah, lalu terbitkan ke blockchain.</p>
       </div>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Student details</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">Data Mahasiswa</CardTitle></CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="name">Full name</Label>
-            <Input id="name" value={form.name} onChange={update("name")} placeholder="e.g. Adinda Putri" />
+            <Label htmlFor="name">Nama lengkap</Label>
+            <Input id="name" value={form.name} onChange={update("name")} placeholder="contoh: Fanny Rahma Dwiyanti" />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="nim">NIM</Label>
-            <Input id="nim" value={form.nim} onChange={update("nim")} placeholder="20210101" className="font-mono" />
+            <Input id="nim" value={form.nim} onChange={update("nim")} placeholder="G.231.23.0126" className="font-mono" />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="major">Major</Label>
-            <Input id="major" value={form.major} onChange={update("major")} placeholder="Computer Science" />
+            <Label htmlFor="major">Program studi</Label>
+            <Input id="major" value={form.major} onChange={update("major")} placeholder="Teknik Informatika" />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="grad">Graduation date</Label>
+            <Label htmlFor="grad">Tanggal lulus</Label>
             <Input id="grad" type="date" value={form.graduation} onChange={update("graduation")} />
           </div>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Certificate file</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">Berkas Sertifikat</CardTitle></CardHeader>
         <CardContent>
           <label
             className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/30 p-8 text-center transition hover:border-primary/50 hover:bg-primary/5"
@@ -78,13 +78,13 @@ function IssuePage() {
               <>
                 <FileText className="mb-2 h-6 w-6 text-primary" />
                 <p className="text-sm font-medium">{file.name}</p>
-                <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB — click to replace</p>
+                <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB — klik untuk mengganti</p>
               </>
             ) : (
               <>
                 <Upload className="mb-2 h-6 w-6 text-muted-foreground" />
-                <p className="text-sm font-medium">Upload diploma PDF</p>
-                <p className="text-xs text-muted-foreground">PDF up to 10MB</p>
+                <p className="text-sm font-medium">Unggah PDF ijazah</p>
+                <p className="text-xs text-muted-foreground">PDF maksimal 10MB</p>
               </>
             )}
           </label>
@@ -100,7 +100,7 @@ function IssuePage() {
         )}
         <Button size="lg" onClick={mint} disabled={minting} className="gap-2">
           <Sparkles className="h-4 w-4" />
-          {minting ? "Minting…" : "Mint to Blockchain"}
+          {minting ? "Menerbitkan…" : "Terbitkan ke Blockchain"}
         </Button>
       </div>
     </div>

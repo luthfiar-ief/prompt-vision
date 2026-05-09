@@ -9,12 +9,12 @@ export function ConnectWalletButton() {
   const connect = () => {
     const fake = "0x" + Math.random().toString(16).slice(2, 6) + "..." + Math.random().toString(16).slice(2, 6);
     setAddr(fake);
-    toast.success("Wallet connected", { description: fake });
+    toast.success("Wallet terhubung", { description: fake });
   };
   return (
     <Button variant="outline" size="sm" onClick={connect} className="gap-2">
       <Wallet className="h-4 w-4" />
-      {addr ?? "Connect Wallet"}
+      {addr ?? "Hubungkan Wallet"}
     </Button>
   );
 }
@@ -29,12 +29,12 @@ export function PublicNav() {
           </div>
           <div className="leading-tight">
             <div className="text-sm font-semibold tracking-tight">VeriChain</div>
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">University Registry</div>
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Registri Kampus</div>
           </div>
         </Link>
         <nav className="hidden items-center gap-6 text-sm font-medium text-muted-foreground md:flex">
-          <Link to="/" activeProps={{ className: "text-foreground" }} className="hover:text-foreground">Verify</Link>
-          <Link to="/about" activeProps={{ className: "text-foreground" }} className="hover:text-foreground">About</Link>
+          <Link to="/" activeProps={{ className: "text-foreground" }} className="hover:text-foreground">Verifikasi</Link>
+          <Link to="/about" activeProps={{ className: "text-foreground" }} className="hover:text-foreground">Tentang</Link>
           <Link to="/admin" activeProps={{ className: "text-foreground" }} className="hover:text-foreground">Admin</Link>
         </nav>
         <div className="flex items-center gap-2">
