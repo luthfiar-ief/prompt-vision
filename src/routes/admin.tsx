@@ -8,8 +8,8 @@ export const Route = createFileRoute("/admin")({
   component: AdminLayout,
   head: () => ({
     meta: [
-      { title: "Admin — VeriChain Registry" },
-      { name: "description", content: "University staff console for issuing and minting student certificates to the blockchain." },
+      { title: "Admin — Registri VeriChain" },
+      { name: "description", content: "Konsol staf kampus untuk menerbitkan dan mencatat sertifikat mahasiswa ke blockchain." },
     ],
   }),
 });
@@ -23,7 +23,7 @@ function AdminLayout() {
           <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur">
             <SidebarTrigger />
             <Separator orientation="vertical" className="h-5" />
-            <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">← Back to public site</Link>
+            <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">← Kembali ke situs publik</Link>
             <div className="ml-auto">
               <ConnectWalletButton />
             </div>

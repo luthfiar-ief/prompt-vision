@@ -14,11 +14,11 @@ import {
 import { GraduationCap, LayoutDashboard, Users, FileCheck2, Upload, Settings } from "lucide-react";
 
 const items = [
-  { title: "Overview", url: "/admin", icon: LayoutDashboard },
-  { title: "Students", url: "/admin/students", icon: Users },
-  { title: "Issue Certificate", url: "/admin/issue", icon: Upload },
-  { title: "Minted", url: "/admin/minted", icon: FileCheck2 },
-  { title: "Settings", url: "/admin/settings", icon: Settings },
+  { title: "Ringkasan", url: "/admin", icon: LayoutDashboard },
+  { title: "Mahasiswa", url: "/admin/students", icon: Users },
+  { title: "Terbitkan Sertifikat", url: "/admin/issue", icon: Upload },
+  { title: "Sertifikat Terbit", url: "/admin/minted", icon: FileCheck2 },
+  { title: "Pengaturan", url: "/admin/settings", icon: Settings },
 ];
 
 export function AdminSidebar() {
@@ -32,13 +32,13 @@ export function AdminSidebar() {
           </div>
           <div className="leading-tight group-data-[collapsible=icon]:hidden">
             <div className="text-sm font-semibold">VeriChain</div>
-            <div className="text-[10px] uppercase tracking-widest opacity-70">Admin Console</div>
+            <div className="text-[10px] uppercase tracking-widest opacity-70">Konsol Admin</div>
           </div>
         </Link>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Registry</SidebarGroupLabel>
+          <SidebarGroupLabel>Registri</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
@@ -57,7 +57,7 @@ export function AdminSidebar() {
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border">
         <div className="px-2 py-2 text-xs opacity-70 group-data-[collapsible=icon]:hidden">
-          Connected as <span className="font-mono">registrar@uni.edu</span>
+          Masuk sebagai <span className="font-mono">registrar@kampus.ac.id</span>
         </div>
       </SidebarFooter>
     </Sidebar>
