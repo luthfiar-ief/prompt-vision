@@ -34,6 +34,7 @@ export function PublicNav() {
         </Link>
         <nav className="hidden items-center gap-6 text-sm font-medium text-muted-foreground md:flex">
           <Link to="/" activeProps={{ className: "text-foreground" }} className="hover:text-foreground">Verifikasi</Link>
+          <Link to="/dashboard" activeProps={{ className: "text-foreground" }} className="hover:text-foreground">Sertifikat Saya</Link>
           <Link to="/about" activeProps={{ className: "text-foreground" }} className="hover:text-foreground">Tentang</Link>
           <Link to="/admin" activeProps={{ className: "text-foreground" }} className="hover:text-foreground">Admin</Link>
         </nav>
