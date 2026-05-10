@@ -175,7 +175,7 @@ function Index() {
                 </div>
 
                 {result && (
-                  <div className="mt-5">
+                  <div ref={resultRef} className="mt-5 scroll-mt-24">
                     {result.status === "authentic" ? (
                       <div className="rounded-lg border border-success/30 bg-success/5 p-4">
                         <div className="flex items-center gap-2 text-success">
