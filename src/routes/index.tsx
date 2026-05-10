@@ -113,13 +113,27 @@ function Index() {
                         onChange={(e) => setCertId(e.target.value)}
                         className="font-mono"
                       />
-                      <Button type="submit" disabled={!certId || loading}>
+                      <Button
+                        type="submit"
+                        disabled={!certId || loading}
+                        className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                      >
                         {loading ? "Memeriksa…" : "Verifikasi"}
                       </Button>
                     </form>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      Coba: <button type="button" onClick={() => { setCertId("VC-2024-0131"); verify("VC-2024-0131"); }} className="font-mono text-primary hover:underline">VC-2024-0131</button>
-                    </p>
+                    <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                      <span className="text-xs text-muted-foreground">Coba:</span>
+                      {Object.keys(MOCK_DB).map((id) => (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => { setCertId(id); verify(id); }}
+                          className="rounded-md border border-border bg-muted/50 px-2 py-0.5 font-mono text-[11px] text-foreground hover:border-primary hover:text-primary"
+                        >
+                          {id}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="relative">
