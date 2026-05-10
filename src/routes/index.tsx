@@ -4,9 +4,10 @@ import { PublicNav } from "@/components/public-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, Upload, FileText, Shield, Database, Search, GraduationCap } from "lucide-react";
+import { verifyCertificate, listMockIds, type VerifyResult } from "@/lib/certificate-service";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -18,34 +19,29 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-type Result = { status: "authentic" | "invalid"; data?: { name: string; nim: string; major: string; graduation: string; tx: string } } | null;
-
-const MOCK_DB: Record<string, { name: string; nim: string; major: string; graduation: string; tx: string }> = {
-  "VC-2024-0131": { name: "Muhammad Luthfi Arif", nim: "G.231.23.0131", major: "Teknik Informatika", graduation: "2024-07-15", tx: "0x9f2c…a41b" },
-  "VC-2024-0129": { name: "Yusup Eskandar", nim: "G.231.23.0129", major: "Teknik Informatika", graduation: "2024-07-15", tx: "0x4ad1…7c0e" },
-  "VC-2024-0170": { name: "Yudistira Arya Pradipa", nim: "G.231.23.0170", major: "Teknik Informatika", graduation: "2024-07-15", tx: "0x18bc…ee92" },
-  "VC-2024-0173": { name: "Anwar Afifudin", nim: "G.231.23.0173", major: "Teknik Informatika", graduation: "2024-07-15", tx: "0x77de…3b21" },
-  "VC-2024-0175": { name: "Ivan Rasyiidu Darell Darji", nim: "G.231.23.0175", major: "Teknik Informatika", graduation: "2024-07-15", tx: "0x52aa…9f10" },
-};
-
 function Index() {
   const [certId, setCertId] = useState("");
-  const [result, setResult] = useState<Result>(null);
+  const [result, setResult] = useState<VerifyResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [drag, setDrag] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
+  const sampleIds = listMockIds();
 
-  const verify = (id: string) => {
-    const cleanId = id.trim().toUpperCase();
+  const verify = useCallback(async (id: string) => {
     setLoading(true);
     setResult(null);
-    setTimeout(() => {
-      const found = MOCK_DB[cleanId];
-      setResult(found ? { status: "authentic", data: found } : { status: "invalid" });
+    try {
+      const res = await verifyCertificate(id);
+      setResult(res);
+    } catch (err) {
+      toast.error("Gagal memverifikasi", {
+        description: err instanceof Error ? err.message : "Terjadi kesalahan jaringan",
+      });
+    } finally {
       setLoading(false);
-    }, 900);
-  };
+    }
+  }, []);
 
   useEffect(() => {
     if (result) resultRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -57,11 +53,12 @@ function Index() {
     const f = e.dataTransfer.files?.[0];
     if (f) {
       setFileName(f.name);
-      const ids = Object.keys(MOCK_DB);
-      const id = f.name.toLowerCase().includes("invalid") ? "VC-XXXX-FAKE" : ids[Math.floor(Math.random() * ids.length)];
+      const id = f.name.toLowerCase().includes("invalid")
+        ? "VC-XXXX-FAKE"
+        : sampleIds[Math.floor(Math.random() * sampleIds.length)];
       verify(id);
     }
-  }, []);
+  }, [sampleIds, verify]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -108,10 +105,11 @@ function Index() {
                       onSubmit={(e) => { e.preventDefault(); if (certId) verify(certId); }}
                     >
                       <Input
-                        placeholder="contoh: VC-2024-0001"
+                        placeholder="contoh: VC-2024-0131"
                         value={certId}
                         onChange={(e) => setCertId(e.target.value)}
                         className="font-mono"
+                        maxLength={32}
                       />
                       <Button
                         type="submit"
@@ -123,7 +121,7 @@ function Index() {
                     </form>
                     <div className="mt-3 flex flex-wrap items-center gap-1.5">
                       <span className="text-xs text-muted-foreground">Coba:</span>
-                      {Object.keys(MOCK_DB).map((id) => (
+                      {sampleIds.map((id) => (
                         <button
                           key={id}
                           type="button"
@@ -162,17 +160,27 @@ function Index() {
                         className="hidden"
                         onChange={(e) => {
                           const f = e.target.files?.[0];
-                          if (f) {
-                            setFileName(f.name);
-                            const ids = Object.keys(MOCK_DB);
-                            const id = f.name.toLowerCase().includes("invalid") ? "VC-XXXX-FAKE" : ids[Math.floor(Math.random() * ids.length)];
-                            verify(id);
+                          if (!f) return;
+                          if (f.size > 10 * 1024 * 1024) {
+                            toast.error("Ukuran berkas melebihi 10MB");
+                            return;
                           }
+                          setFileName(f.name);
+                          const id = f.name.toLowerCase().includes("invalid")
+                            ? "VC-XXXX-FAKE"
+                            : sampleIds[Math.floor(Math.random() * sampleIds.length)];
+                          verify(id);
                         }}
                       />
                     </label>
                   </div>
                 </div>
+
+                {loading && (
+                  <div className="mt-5 rounded-lg border border-border bg-muted/30 p-4 text-center text-sm text-muted-foreground">
+                    Memeriksa rekam blockchain…
+                  </div>
+                )}
 
                 {result && (
                   <div ref={resultRef} className="mt-5 scroll-mt-24">
@@ -183,11 +191,11 @@ function Index() {
                           <span className="font-semibold">Sertifikat Asli</span>
                         </div>
                         <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                          <div><dt className="text-xs text-muted-foreground">Nama</dt><dd className="font-medium">{result.data!.name}</dd></div>
-                          <div><dt className="text-xs text-muted-foreground">NIM</dt><dd className="font-mono">{result.data!.nim}</dd></div>
-                          <div><dt className="text-xs text-muted-foreground">Program Studi</dt><dd>{result.data!.major}</dd></div>
-                          <div><dt className="text-xs text-muted-foreground">Tanggal Lulus</dt><dd>{result.data!.graduation}</dd></div>
-                          <div className="col-span-2"><dt className="text-xs text-muted-foreground">Transaksi</dt><dd className="font-mono text-xs text-primary">{result.data!.tx}</dd></div>
+                          <div><dt className="text-xs text-muted-foreground">Nama</dt><dd className="font-medium">{result.data.name}</dd></div>
+                          <div><dt className="text-xs text-muted-foreground">NIM</dt><dd className="font-mono">{result.data.nim}</dd></div>
+                          <div><dt className="text-xs text-muted-foreground">Program Studi</dt><dd>{result.data.major}</dd></div>
+                          <div><dt className="text-xs text-muted-foreground">Tanggal Lulus</dt><dd>{result.data.graduation}</dd></div>
+                          <div className="col-span-2"><dt className="text-xs text-muted-foreground">Transaksi</dt><dd className="truncate font-mono text-xs text-primary">{result.data.tx}</dd></div>
                         </dl>
                       </div>
                     ) : (

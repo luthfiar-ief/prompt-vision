@@ -1,11 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PublicNav } from "@/components/public-nav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Wallet, Download, Share2, FileCheck2, GraduationCap, ExternalLink, Copy } from "lucide-react";
 import { toast } from "sonner";
+import { getOwnedCertificates } from "@/lib/certificate-service";
+import type { Certificate } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/dashboard")({
   component: StudentDashboard,
@@ -17,40 +19,22 @@ export const Route = createFileRoute("/dashboard")({
   }),
 });
 
-type Cert = {
-  id: string;
-  name: string;
-  nim: string;
-  major: string;
-  graduation: string;
-  tx: string;
-  ipfs: string;
-};
-
-const MOCK_OWNED: Cert[] = [
-  {
-    id: "VC-2024-0131",
-    name: "Muhammad Luthfi Arif",
-    nim: "G.231.23.0131",
-    major: "Teknik Informatika",
-    graduation: "2024-07-15",
-    tx: "0x9f2c4ad1a3c8d72e91b4f88c0e2a41b",
-    ipfs: "ipfs://bafybeigd...c8a",
-  },
-  {
-    id: "VC-2024-0131-MBKM",
-    name: "Muhammad Luthfi Arif",
-    nim: "G.231.23.0131",
-    major: "Teknik Informatika — Sertifikat MBKM",
-    graduation: "2024-02-20",
-    tx: "0x4ad17c0e9f2caa11bc9c882ee92aa4",
-    ipfs: "ipfs://bafybeih7...e29",
-  },
-];
+type Cert = Certificate;
 
 function StudentDashboard() {
   const [wallet, setWallet] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [certs, setCerts] = useState<Cert[]>([]);
+  const [loadingCerts, setLoadingCerts] = useState(false);
+
+  useEffect(() => {
+    if (!wallet) return;
+    setLoadingCerts(true);
+    getOwnedCertificates()
+      .then(setCerts)
+      .catch((err) => toast.error("Gagal memuat sertifikat", { description: String(err.message ?? err) }))
+      .finally(() => setLoadingCerts(false));
+  }, [wallet]);
 
   const connect = () => {
     setLoading(true);
