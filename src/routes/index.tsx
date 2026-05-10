@@ -92,12 +92,9 @@ function Index() {
                   </div>
                 </div>
 
-                <Tabs defaultValue="id">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="id">Berdasarkan ID</TabsTrigger>
-                    <TabsTrigger value="file">Unggah PDF</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="id" className="mt-4">
+                <div className="space-y-5">
+                  <div>
+                    <label className="mb-2 block text-xs font-medium text-muted-foreground">ID Sertifikat</label>
                     <form
                       className="flex gap-2"
                       onSubmit={(e) => { e.preventDefault(); if (certId) verify(certId); }}
@@ -115,20 +112,45 @@ function Index() {
                     <p className="mt-2 text-xs text-muted-foreground">
                       Coba: <button type="button" onClick={() => { setCertId("VC-2024-0001"); verify("VC-2024-0001"); }} className="font-mono text-primary hover:underline">VC-2024-0001</button>
                     </p>
-                  </TabsContent>
-                  <TabsContent value="file" className="mt-4">
-                    <div
+                  </div>
+
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
+                    <div className="relative flex justify-center"><span className="bg-card px-2 text-xs uppercase tracking-wider text-muted-foreground">atau</span></div>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-xs font-medium text-muted-foreground">Unggah berkas PDF sertifikat</label>
+                    <label
+                      htmlFor="cert-file"
                       onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
                       onDragLeave={() => setDrag(false)}
                       onDrop={onDrop}
-                      className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 text-center transition ${drag ? "border-primary bg-primary/5" : "border-border bg-muted/30"}`}
+                      className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 text-center transition ${drag ? "border-primary bg-primary/5" : "border-border bg-muted/30 hover:bg-muted/50"}`}
                     >
-                      <Upload className="mb-2 h-6 w-6 text-muted-foreground" />
-                      <p className="text-sm font-medium">{fileName ?? "Letakkan berkas PDF sertifikat di sini"}</p>
-                      <p className="text-xs text-muted-foreground">atau klik untuk memilih — PDF maks 10MB</p>
-                    </div>
-                  </TabsContent>
-                </Tabs>
+                      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <Upload className="h-5 w-5" />
+                      </div>
+                      <p className="text-sm font-medium">{fileName ?? "Seret & lepas PDF di sini"}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">atau klik untuk memilih berkas — PDF maks 10MB</p>
+                      <input
+                        id="cert-file"
+                        type="file"
+                        accept="application/pdf"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) {
+                            setFileName(f.name);
+                            const ids = Object.keys(MOCK_DB);
+                            const id = f.name.toLowerCase().includes("invalid") ? "VC-XXXX-FAKE" : ids[Math.floor(Math.random() * ids.length)];
+                            verify(id);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
 
                 {result && (
                   <div className="mt-5">
