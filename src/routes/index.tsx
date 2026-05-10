@@ -21,9 +21,11 @@ export const Route = createFileRoute("/")({
 type Result = { status: "authentic" | "invalid"; data?: { name: string; nim: string; major: string; graduation: string; tx: string } } | null;
 
 const MOCK_DB: Record<string, { name: string; nim: string; major: string; graduation: string; tx: string }> = {
-  "VC-2024-0001": { name: "Fanny Rahma Dwiyanti", nim: "G.231.23.0126", major: "Teknik Informatika", graduation: "2024-07-15", tx: "0x9f2c…a41b" },
-  "VC-2024-0042": { name: "Rizky Taufik Hidayat", nim: "G.231.23.0127", major: "Teknik Informatika", graduation: "2024-07-15", tx: "0x4ad1…7c0e" },
-  "VC-2023-0117": { name: "Sarah Mawla", nim: "G.231.23.0152", major: "Teknik Informatika", graduation: "2023-12-09", tx: "0x18bc…ee92" },
+  "VC-2024-0131": { name: "Muhammad Luthfi Arif", nim: "G.231.23.0131", major: "Teknik Informatika", graduation: "2024-07-15", tx: "0x9f2c…a41b" },
+  "VC-2024-0129": { name: "Yusup Eskandar", nim: "G.231.23.0129", major: "Teknik Informatika", graduation: "2024-07-15", tx: "0x4ad1…7c0e" },
+  "VC-2024-0170": { name: "Yudistira Arya Pradipa", nim: "G.231.23.0170", major: "Teknik Informatika", graduation: "2024-07-15", tx: "0x18bc…ee92" },
+  "VC-2024-0173": { name: "Anwar Afifudin", nim: "G.231.23.0173", major: "Teknik Informatika", graduation: "2024-07-15", tx: "0x77de…3b21" },
+  "VC-2024-0175": { name: "Ivan Rasyiidu Darell Darji", nim: "G.231.23.0175", major: "Teknik Informatika", graduation: "2024-07-15", tx: "0x52aa…9f10" },
 };
 
 function Index() {
