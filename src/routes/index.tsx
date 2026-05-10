@@ -112,7 +112,7 @@ function Index() {
                       </Button>
                     </form>
                     <p className="mt-2 text-xs text-muted-foreground">
-                      Coba: <button type="button" onClick={() => { setCertId("VC-2024-0001"); verify("VC-2024-0001"); }} className="font-mono text-primary hover:underline">VC-2024-0001</button>
+                      Coba: <button type="button" onClick={() => { setCertId("VC-2024-0131"); verify("VC-2024-0131"); }} className="font-mono text-primary hover:underline">VC-2024-0131</button>
                     </p>
                   </div>
 
