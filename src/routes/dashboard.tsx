@@ -114,9 +114,17 @@ function StudentDashboard() {
               </Button>
             </CardContent>
           </Card>
+        ) : loadingCerts ? (
+          <div className="rounded-lg border border-border bg-muted/30 p-10 text-center text-sm text-muted-foreground">
+            Memuat sertifikat Anda…
+          </div>
+        ) : certs.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
+            Belum ada sertifikat tertaut pada wallet ini.
+          </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
-            {MOCK_OWNED.map((c) => (
+            {certs.map((c: Cert) => (
               <Card key={c.id} className="overflow-hidden border-border/80">
                 <div className="flex items-center gap-3 border-b border-border/60 bg-muted/30 px-5 py-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground">
