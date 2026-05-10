@@ -29,18 +29,18 @@ type Cert = {
 
 const MOCK_OWNED: Cert[] = [
   {
-    id: "VC-2024-0001",
-    name: "Fanny Rahma Dwiyanti",
-    nim: "G.231.23.0126",
+    id: "VC-2024-0131",
+    name: "Muhammad Luthfi Arif",
+    nim: "G.231.23.0131",
     major: "Teknik Informatika",
     graduation: "2024-07-15",
     tx: "0x9f2c4ad1a3c8d72e91b4f88c0e2a41b",
     ipfs: "ipfs://bafybeigd...c8a",
   },
   {
-    id: "VC-2024-0042",
-    name: "Fanny Rahma Dwiyanti",
-    nim: "G.231.23.0126",
+    id: "VC-2024-0131-MBKM",
+    name: "Muhammad Luthfi Arif",
+    nim: "G.231.23.0131",
     major: "Teknik Informatika — Sertifikat MBKM",
     graduation: "2024-02-20",
     tx: "0x4ad17c0e9f2caa11bc9c882ee92aa4",

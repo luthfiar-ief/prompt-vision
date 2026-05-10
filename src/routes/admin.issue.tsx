@@ -50,11 +50,11 @@ function IssuePage() {
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="name">Nama lengkap</Label>
-            <Input id="name" value={form.name} onChange={update("name")} placeholder="contoh: Fanny Rahma Dwiyanti" />
+            <Input id="name" value={form.name} onChange={update("name")} placeholder="contoh: Muhammad Luthfi Arif" />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="nim">NIM</Label>
-            <Input id="nim" value={form.nim} onChange={update("nim")} placeholder="G.231.23.0126" className="font-mono" />
+            <Input id="nim" value={form.nim} onChange={update("nim")} placeholder="G.231.23.0131" className="font-mono" />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="major">Program studi</Label>
