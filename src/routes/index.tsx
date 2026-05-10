@@ -34,16 +34,22 @@ function Index() {
   const [loading, setLoading] = useState(false);
   const [drag, setDrag] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
 
   const verify = (id: string) => {
+    const cleanId = id.trim().toUpperCase();
     setLoading(true);
     setResult(null);
     setTimeout(() => {
-      const found = MOCK_DB[id.trim().toUpperCase()];
+      const found = MOCK_DB[cleanId];
       setResult(found ? { status: "authentic", data: found } : { status: "invalid" });
       setLoading(false);
     }, 900);
   };
+
+  useEffect(() => {
+    if (result) resultRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [result]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
