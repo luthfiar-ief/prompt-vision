@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, Upload, FileText, Shield, Database, Search, GraduationCap } from "lucide-react";
-import { verifyCertificate, listMockIds, type VerifyResult } from "@/lib/certificate-service";
+import { verifyById, verifyByPdf, listMintedIds, type VerifyResult } from "@/lib/certificate-service";
+import { useChain } from "@/lib/chain-store";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
@@ -20,23 +21,24 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  useChain(); // re-render saat ada penerbitan baru
   const [certId, setCertId] = useState("");
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [drag, setDrag] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
-  const sampleIds = listMockIds();
+  const mintedIds = listMintedIds();
+  const sampleIds = mintedIds.slice(0, 5);
 
-  const verify = useCallback(async (id: string) => {
+  const runVerify = useCallback(async (fn: () => Promise<VerifyResult>) => {
     setLoading(true);
     setResult(null);
     try {
-      const res = await verifyCertificate(id);
-      setResult(res);
+      setResult(await fn());
     } catch (err) {
       toast.error("Gagal memverifikasi", {
-        description: err instanceof Error ? err.message : "Terjadi kesalahan jaringan",
+        description: err instanceof Error ? err.message : "Terjadi kesalahan",
       });
     } finally {
       setLoading(false);
@@ -47,18 +49,25 @@ function Index() {
     if (result) resultRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [result]);
 
+  const handleFile = useCallback((f: File) => {
+    if (f.type !== "application/pdf") {
+      toast.error("Berkas harus berupa PDF");
+      return;
+    }
+    if (f.size > 10 * 1024 * 1024) {
+      toast.error("Ukuran berkas melebihi 10MB");
+      return;
+    }
+    setFileName(f.name);
+    runVerify(() => verifyByPdf(f));
+  }, [runVerify]);
+
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDrag(false);
     const f = e.dataTransfer.files?.[0];
-    if (f) {
-      setFileName(f.name);
-      const id = f.name.toLowerCase().includes("invalid")
-        ? "VC-XXXX-FAKE"
-        : sampleIds[Math.floor(Math.random() * sampleIds.length)];
-      verify(id);
-    }
-  }, [sampleIds, verify]);
+    if (f) handleFile(f);
+  }, [handleFile]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -79,7 +88,7 @@ function Index() {
                 Portal resmi verifikasi sertifikat kampus. Setiap ijazah yang diterbitkan tercatat di blockchain — instan, tidak dapat diubah, dan dapat diverifikasi dari mana saja.
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2"><Database className="h-4 w-4 text-primary" /> 12.847 sertifikat tercatat</div>
+                <div className="flex items-center gap-2"><Database className="h-4 w-4 text-primary" /> {mintedIds.length} sertifikat tercatat</div>
                 <span className="text-border">•</span>
                 <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Uptime 99,9%</div>
               </div>
@@ -102,7 +111,7 @@ function Index() {
                     <label className="mb-2 block text-xs font-medium text-muted-foreground">ID Sertifikat</label>
                     <form
                       className="flex gap-2"
-                      onSubmit={(e) => { e.preventDefault(); if (certId) verify(certId); }}
+                      onSubmit={(e) => { e.preventDefault(); if (certId) runVerify(() => verifyById(certId)); }}
                     >
                       <Input
                         placeholder="contoh: VC-2024-0131"
@@ -119,19 +128,25 @@ function Index() {
                         {loading ? "Memeriksa…" : "Verifikasi"}
                       </Button>
                     </form>
-                    <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                      <span className="text-xs text-muted-foreground">Coba:</span>
-                      {sampleIds.map((id) => (
-                        <button
-                          key={id}
-                          type="button"
-                          onClick={() => { setCertId(id); verify(id); }}
-                          className="rounded-md border border-border bg-muted/50 px-2 py-0.5 font-mono text-[11px] text-foreground hover:border-primary hover:text-primary"
-                        >
-                          {id}
-                        </button>
-                      ))}
-                    </div>
+                    {sampleIds.length > 0 ? (
+                      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                        <span className="text-xs text-muted-foreground">Coba:</span>
+                        {sampleIds.map((id: string) => (
+                          <button
+                            key={id}
+                            type="button"
+                            onClick={() => { setCertId(id); runVerify(() => verifyById(id)); }}
+                            className="rounded-md border border-border bg-muted/50 px-2 py-0.5 font-mono text-[11px] text-foreground hover:border-primary hover:text-primary"
+                          >
+                            {id}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-3 text-xs text-muted-foreground">
+                        Belum ada sertifikat di blockchain. Admin perlu menerbitkan dari konsol terlebih dahulu.
+                      </p>
+                    )}
                   </div>
 
                   <div className="relative">
@@ -152,7 +167,7 @@ function Index() {
                         <Upload className="h-5 w-5" />
                       </div>
                       <p className="text-sm font-medium">{fileName ?? "Seret & lepas PDF di sini"}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">atau klik untuk memilih berkas — PDF maks 10MB</p>
+                      <p className="mt-1 text-xs text-muted-foreground">PDF di-hash (SHA-256) lalu dicocokkan dengan rekam blockchain — maks 10MB</p>
                       <input
                         id="cert-file"
                         type="file"
@@ -160,16 +175,7 @@ function Index() {
                         className="hidden"
                         onChange={(e) => {
                           const f = e.target.files?.[0];
-                          if (!f) return;
-                          if (f.size > 10 * 1024 * 1024) {
-                            toast.error("Ukuran berkas melebihi 10MB");
-                            return;
-                          }
-                          setFileName(f.name);
-                          const id = f.name.toLowerCase().includes("invalid")
-                            ? "VC-XXXX-FAKE"
-                            : sampleIds[Math.floor(Math.random() * sampleIds.length)];
-                          verify(id);
+                          if (f) handleFile(f);
                         }}
                       />
                     </label>
@@ -186,15 +192,21 @@ function Index() {
                   <div ref={resultRef} className="mt-5 scroll-mt-24">
                     {result.status === "authentic" ? (
                       <div className="rounded-lg border border-success/30 bg-success/5 p-4">
-                        <div className="flex items-center gap-2 text-success">
-                          <CheckCircle2 className="h-5 w-5" />
-                          <span className="font-semibold">Sertifikat Asli</span>
+                        <div className="flex items-center justify-between gap-2 text-success">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="h-5 w-5" />
+                            <span className="font-semibold">Sertifikat Asli</span>
+                          </div>
+                          <Badge variant="outline" className="border-success/30 text-success">
+                            cocok via {result.matchedBy === "pdf" ? "hash PDF" : "ID"}
+                          </Badge>
                         </div>
                         <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
                           <div><dt className="text-xs text-muted-foreground">Nama</dt><dd className="font-medium">{result.data.name}</dd></div>
                           <div><dt className="text-xs text-muted-foreground">NIM</dt><dd className="font-mono">{result.data.nim}</dd></div>
                           <div><dt className="text-xs text-muted-foreground">Program Studi</dt><dd>{result.data.major}</dd></div>
                           <div><dt className="text-xs text-muted-foreground">Tanggal Lulus</dt><dd>{result.data.graduation}</dd></div>
+                          <div className="col-span-2"><dt className="text-xs text-muted-foreground">ID Sertifikat</dt><dd className="font-mono text-xs">{result.data.id}</dd></div>
                           <div className="col-span-2"><dt className="text-xs text-muted-foreground">Transaksi</dt><dd className="truncate font-mono text-xs text-primary">{result.data.tx}</dd></div>
                         </dl>
                       </div>

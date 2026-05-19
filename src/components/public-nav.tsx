@@ -1,20 +1,75 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, Wallet } from "lucide-react";
-import { useState } from "react";
+import { Wallet, LogOut } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { VeriChainLogo } from "./verichain-logo";
+import { findStudentByWallet } from "@/lib/mock-data";
+
+const WALLET_KEY = "verichain.wallet";
+
+export function useConnectedWallet() {
+  const [addr, setAddr] = useState<string | null>(null);
+  useEffect(() => {
+    setAddr(localStorage.getItem(WALLET_KEY));
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === WALLET_KEY) setAddr(e.newValue);
+    };
+    const onCustom = () => setAddr(localStorage.getItem(WALLET_KEY));
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("verichain:wallet", onCustom);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("verichain:wallet", onCustom);
+    };
+  }, []);
+  return addr;
+}
+
+export function setConnectedWallet(addr: string | null) {
+  if (addr) localStorage.setItem(WALLET_KEY, addr);
+  else localStorage.removeItem(WALLET_KEY);
+  window.dispatchEvent(new Event("verichain:wallet"));
+}
 
 export function ConnectWalletButton() {
-  const [addr, setAddr] = useState<string | null>(null);
-  const connect = () => {
-    const fake = "0x" + Math.random().toString(16).slice(2, 6) + "..." + Math.random().toString(16).slice(2, 6);
-    setAddr(fake);
-    toast.success("Wallet terhubung", { description: fake });
-  };
+  const addr = useConnectedWallet();
+  const navigate = useNavigate();
+  const route = useRouterState({ select: (r) => r.location.pathname });
+
+  if (addr) {
+    const student = findStudentByWallet(addr);
+    const short = addr.slice(0, 6) + "…" + addr.slice(-4);
+    return (
+      <div className="flex items-center gap-2">
+        <Button asChild variant="outline" size="sm" className="gap-2">
+          <Link to="/dashboard">
+            <Wallet className="h-4 w-4" />
+            <span className="font-mono text-xs">{short}</span>
+          </Link>
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            setConnectedWallet(null);
+            toast.message(`Wallet ${student?.name ?? "pengguna"} diputus`);
+            if (route.startsWith("/dashboard")) navigate({ to: "/" });
+          }}
+          aria-label="Putuskan wallet"
+        >
+          <LogOut className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <Button variant="outline" size="sm" onClick={connect} className="gap-2">
-      <Wallet className="h-4 w-4" />
-      {addr ?? "Hubungkan Wallet"}
+    <Button asChild variant="outline" size="sm" className="gap-2">
+      <Link to="/login">
+        <Wallet className="h-4 w-4" />
+        Hubungkan Wallet
+      </Link>
     </Button>
   );
 }
@@ -24,8 +79,8 @@ export function PublicNav() {
     <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/80 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <GraduationCap className="h-5 w-5" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary p-1.5 text-primary-foreground">
+            <VeriChainLogo />
           </div>
           <div className="leading-tight">
             <div className="text-sm font-semibold tracking-tight">VeriChain</div>

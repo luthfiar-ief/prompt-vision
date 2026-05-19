@@ -8,13 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Upload, Sparkles, FileText, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { issueCertificate } from "@/lib/certificate-service";
+import { hashFile } from "@/lib/chain-store";
+import { findStudentByNim, STUDENTS } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/admin/issue")({
   component: IssuePage,
 });
 
 const issueSchema = z.object({
-  name: z.string().trim().min(2, "Nama minimal 2 karakter").max(100),
   nim: z
     .string()
     .trim()
@@ -26,10 +27,12 @@ const issueSchema = z.object({
 const MAX_PDF_BYTES = 10 * 1024 * 1024;
 
 function IssuePage() {
-  const [form, setForm] = useState({ name: "", nim: "", major: "", graduation: "" });
+  const [form, setForm] = useState({ nim: "", major: "Teknik Informatika", graduation: "" });
   const [file, setFile] = useState<File | null>(null);
   const [minting, setMinting] = useState(false);
   const [tx, setTx] = useState<string | null>(null);
+
+  const student = findStudentByNim(form.nim);
 
   const update = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((p) => ({ ...p, [k]: e.target.value }));
@@ -40,24 +43,28 @@ function IssuePage() {
       toast.error(parsed.error.issues[0]?.message ?? "Data tidak valid");
       return;
     }
-    if (!file) {
-      toast.error("Unggah berkas PDF sertifikat");
+    if (!findStudentByNim(parsed.data.nim)) {
+      toast.error("NIM tidak terdaftar di daftar mahasiswa kampus");
       return;
     }
-    if (file.type !== "application/pdf") {
-      toast.error("Berkas harus berupa PDF");
-      return;
-    }
-    if (file.size > MAX_PDF_BYTES) {
-      toast.error("Ukuran PDF melebihi 10MB");
-      return;
-    }
+    if (!file) { toast.error("Unggah berkas PDF sertifikat"); return; }
+    if (file.type !== "application/pdf") { toast.error("Berkas harus berupa PDF"); return; }
+    if (file.size > MAX_PDF_BYTES) { toast.error("Ukuran PDF melebihi 10MB"); return; }
 
     setMinting(true);
     try {
-      const res = await issueCertificate(parsed.data);
-      setTx(res.tx);
-      toast.success("Tercatat di blockchain", { description: `${res.id} • ${res.tx.slice(0, 16)}…` });
+      const pdfHash = await hashFile(file);
+      const cert = await issueCertificate({
+        nim: parsed.data.nim,
+        major: parsed.data.major,
+        graduation: parsed.data.graduation,
+        pdfHash,
+        pdfName: file.name,
+      });
+      setTx(cert.tx);
+      toast.success("Tercatat di blockchain", {
+        description: `${cert.id} • ${cert.tx.slice(0, 18)}…`,
+      });
     } catch (err) {
       toast.error("Gagal menerbitkan", {
         description: err instanceof Error ? err.message : "Terjadi kesalahan",
@@ -71,19 +78,38 @@ function IssuePage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Terbitkan Sertifikat</h1>
-        <p className="text-sm text-muted-foreground">Isi data mahasiswa, unggah PDF ijazah, lalu terbitkan ke blockchain.</p>
+        <p className="text-sm text-muted-foreground">
+          Pilih mahasiswa berdasarkan NIM, unggah PDF ijazah, lalu terbitkan ke blockchain. Hash PDF akan disimpan untuk verifikasi publik.
+        </p>
       </div>
 
       <Card>
         <CardHeader><CardTitle className="text-base">Data Mahasiswa</CardTitle></CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="name">Nama lengkap</Label>
-            <Input id="name" value={form.name} onChange={update("name")} placeholder="contoh: Muhammad Luthfi Arif" maxLength={100} />
+            <Label htmlFor="nim">NIM mahasiswa</Label>
+            <Input
+              id="nim"
+              list="nim-list"
+              value={form.nim}
+              onChange={update("nim")}
+              placeholder="G.231.23.0131"
+              className="font-mono"
+              maxLength={20}
+            />
+            <datalist id="nim-list">
+              {STUDENTS.map((s) => (
+                <option key={s.nim} value={s.nim}>{s.name}</option>
+              ))}
+            </datalist>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="nim">NIM</Label>
-            <Input id="nim" value={form.nim} onChange={update("nim")} placeholder="G.231.23.0131" className="font-mono" maxLength={20} />
+            <Label>Nama (otomatis)</Label>
+            <Input value={student?.name ?? ""} disabled placeholder="Pilih NIM terlebih dahulu" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Alamat Wallet (otomatis)</Label>
+            <Input value={student?.wallet ?? ""} disabled className="font-mono text-xs" placeholder="—" />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="major">Program studi</Label>
@@ -99,9 +125,7 @@ function IssuePage() {
       <Card>
         <CardHeader><CardTitle className="text-base">Berkas Sertifikat</CardTitle></CardHeader>
         <CardContent>
-          <label
-            className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/30 p-8 text-center transition hover:border-primary/50 hover:bg-primary/5"
-          >
+          <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/30 p-8 text-center transition hover:border-primary/50 hover:bg-primary/5">
             <input
               type="file"
               accept="application/pdf"
@@ -125,7 +149,7 @@ function IssuePage() {
               <>
                 <Upload className="mb-2 h-6 w-6 text-muted-foreground" />
                 <p className="text-sm font-medium">Unggah PDF ijazah</p>
-                <p className="text-xs text-muted-foreground">PDF maksimal 10MB</p>
+                <p className="text-xs text-muted-foreground">PDF maksimal 10MB — akan di-hash SHA-256</p>
               </>
             )}
           </label>
