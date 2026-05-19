@@ -11,7 +11,8 @@ import {
   SidebarMenuItem,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { GraduationCap, LayoutDashboard, Users, FileCheck2, Upload, Settings } from "lucide-react";
+import { LayoutDashboard, Users, FileCheck2, Upload, Settings } from "lucide-react";
+import { VeriChainLogo } from "./verichain-logo";
 
 const items = [
   { title: "Ringkasan", url: "/admin", icon: LayoutDashboard },
@@ -27,8 +28,8 @@ export function AdminSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border">
         <Link to="/admin" className="flex items-center gap-2 px-2 py-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-            <GraduationCap className="h-4 w-4" />
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary p-1 text-sidebar-primary-foreground">
+            <VeriChainLogo />
           </div>
           <div className="leading-tight group-data-[collapsible=icon]:hidden">
             <div className="text-sm font-semibold">VeriChain</div>
