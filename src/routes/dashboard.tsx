@@ -1,13 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { PublicNav } from "@/components/public-nav";
+import { PublicNav, useConnectedWallet, setConnectedWallet } from "@/components/public-nav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Wallet, Download, Share2, FileCheck2, GraduationCap, ExternalLink, Copy } from "lucide-react";
 import { toast } from "sonner";
-import { getOwnedCertificates } from "@/lib/certificate-service";
-import type { Certificate } from "@/lib/mock-data";
+import { getOwnedCertificatesByWallet } from "@/lib/certificate-service";
+import { useChain } from "@/lib/chain-store";
+import { findStudentByWallet, type Certificate } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/dashboard")({
   component: StudentDashboard,
@@ -19,35 +19,14 @@ export const Route = createFileRoute("/dashboard")({
   }),
 });
 
-type Cert = Certificate;
-
 function StudentDashboard() {
-  const [wallet, setWallet] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [certs, setCerts] = useState<Cert[]>([]);
-  const [loadingCerts, setLoadingCerts] = useState(false);
-
-  useEffect(() => {
-    if (!wallet) return;
-    setLoadingCerts(true);
-    getOwnedCertificates()
-      .then(setCerts)
-      .catch((err) => toast.error("Gagal memuat sertifikat", { description: String(err.message ?? err) }))
-      .finally(() => setLoadingCerts(false));
-  }, [wallet]);
-
-  const connect = () => {
-    setLoading(true);
-    setTimeout(() => {
-      const fake = "0x" + Math.random().toString(16).slice(2, 6) + "..." + Math.random().toString(16).slice(2, 6);
-      setWallet(fake);
-      setLoading(false);
-      toast.success("Wallet terhubung", { description: fake });
-    }, 700);
-  };
+  useChain();
+  const wallet = useConnectedWallet();
+  const student = wallet ? findStudentByWallet(wallet) : undefined;
+  const certs = wallet ? getOwnedCertificatesByWallet(wallet) : [];
 
   const disconnect = () => {
-    setWallet(null);
+    setConnectedWallet(null);
     toast.message("Wallet diputus");
   };
 
@@ -57,9 +36,9 @@ function StudentDashboard() {
     toast.success("Tautan verifikasi disalin", { description: url });
   };
 
-  const downloadPdf = (c: Cert) => {
+  const downloadPdf = (c: Certificate) => {
     const blob = new Blob(
-      [`Sertifikat VeriChain\n\nID: ${c.id}\nNama: ${c.name}\nNIM: ${c.nim}\nProgram: ${c.major}\nLulus: ${c.graduation}\nTx: ${c.tx}\n`],
+      [`Sertifikat VeriChain\n\nID: ${c.id}\nNama: ${c.name}\nNIM: ${c.nim}\nProgram: ${c.major}\nLulus: ${c.graduation}\nTx: ${c.tx}\nWallet: ${c.wallet}\n`],
       { type: "application/pdf" }
     );
     const url = URL.createObjectURL(blob);
@@ -83,17 +62,19 @@ function StudentDashboard() {
             </Badge>
             <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Sertifikat saya</h1>
             <p className="mt-2 max-w-xl text-sm text-muted-foreground sm:text-base">
-              Hubungkan dompet Web3 Anda untuk melihat seluruh ijazah dan sertifikat yang diterbitkan kampus atas nama Anda.
+              {student
+                ? <>Selamat datang, <span className="font-semibold text-foreground">{student.name}</span> ({student.nim}).</>
+                : "Hubungkan wallet kampus Anda untuk melihat sertifikat yang diterbitkan atas nama Anda."}
             </p>
           </div>
-          {wallet ? (
+          {wallet && (
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="gap-1.5 font-mono text-xs">
-                <Wallet className="h-3 w-3" /> {wallet}
+                <Wallet className="h-3 w-3" /> {wallet.slice(0, 6)}…{wallet.slice(-4)}
               </Badge>
               <Button variant="ghost" size="sm" onClick={disconnect}>Putuskan</Button>
             </div>
-          ) : null}
+          )}
         </div>
 
         {!wallet ? (
@@ -108,23 +89,21 @@ function StudentDashboard() {
                   Sertifikat ditautkan ke alamat wallet yang didaftarkan saat penerbitan. Hubungkan untuk membuka koleksi Anda.
                 </p>
               </div>
-              <Button onClick={connect} disabled={loading} className="gap-2">
-                <Wallet className="h-4 w-4" />
-                {loading ? "Menghubungkan…" : "Hubungkan Wallet"}
+              <Button asChild className="gap-2">
+                <Link to="/login">
+                  <Wallet className="h-4 w-4" /> Hubungkan Wallet
+                </Link>
               </Button>
             </CardContent>
           </Card>
-        ) : loadingCerts ? (
-          <div className="rounded-lg border border-border bg-muted/30 p-10 text-center text-sm text-muted-foreground">
-            Memuat sertifikat Anda…
-          </div>
         ) : certs.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-            Belum ada sertifikat tertaut pada wallet ini.
+            Belum ada sertifikat yang diterbitkan untuk wallet ini. Hubungi admin akademik
+            untuk mengkonfirmasi proses penerbitan ijazah Anda.
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
-            {certs.map((c: Cert) => (
+            {certs.map((c: Certificate) => (
               <Card key={c.id} className="overflow-hidden border-border/80">
                 <div className="flex items-center gap-3 border-b border-border/60 bg-muted/30 px-5 py-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground">
@@ -141,7 +120,7 @@ function StudentDashboard() {
                     <div><dt className="text-xs text-muted-foreground">Nama</dt><dd className="font-medium">{c.name}</dd></div>
                     <div><dt className="text-xs text-muted-foreground">NIM</dt><dd className="font-mono">{c.nim}</dd></div>
                     <div><dt className="text-xs text-muted-foreground">Tanggal Lulus</dt><dd>{c.graduation}</dd></div>
-                    <div><dt className="text-xs text-muted-foreground">IPFS</dt><dd className="truncate font-mono text-xs text-primary">{c.ipfs}</dd></div>
+                    <div><dt className="text-xs text-muted-foreground">Hash PDF</dt><dd className="truncate font-mono text-xs text-primary">{c.pdfHash ? c.pdfHash.slice(0, 18) + "…" : "—"}</dd></div>
                     <div className="col-span-2"><dt className="text-xs text-muted-foreground">Transaksi</dt><dd className="truncate font-mono text-xs text-primary">{c.tx}</dd></div>
                   </dl>
                   <div className="mt-5 flex flex-wrap gap-2">
@@ -152,7 +131,7 @@ function StudentDashboard() {
                       <Share2 className="h-3.5 w-3.5" /> Salin tautan verifikasi
                     </Button>
                     <Button asChild size="sm" variant="ghost" className="gap-1.5">
-                      <Link to="/" search={{ cert: c.id } as never}>
+                      <Link to="/">
                         <ExternalLink className="h-3.5 w-3.5" /> Lihat publik
                       </Link>
                     </Button>

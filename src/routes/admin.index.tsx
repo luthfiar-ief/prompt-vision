@@ -4,26 +4,27 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Users, FileCheck2, Clock, TrendingUp, Upload } from "lucide-react";
+import { listCertificates, listStudentsWithStatus, useChain } from "@/lib/chain-store";
 
 export const Route = createFileRoute("/admin/")({
   component: AdminOverview,
 });
 
-const stats = [
-  { label: "Total Mahasiswa", value: "2.847", icon: Users, delta: "+24 bulan ini" },
-  { label: "Sertifikat Terbit", value: "12.847", icon: FileCheck2, delta: "+312 bulan ini" },
-  { label: "Menunggu Penerbitan", value: "47", icon: Clock, delta: "Dalam 3 batch" },
-  { label: "Verifikasi (30h)", value: "8.209", icon: TrendingUp, delta: "+18,4% dari sebelumnya" },
-];
-
-const recent = [
-  { id: "VC-2024-0042", name: "Rizky Taufik Hidayat", major: "Teknik Informatika", date: "2024-07-15", status: "Terbit" },
-  { id: "VC-2024-0041", name: "Fanny Rahma Dwiyanti", major: "Teknik Informatika", date: "2024-07-15", status: "Terbit" },
-  { id: "VC-2024-0040", name: "Yusup Eskandar", major: "Teknik Informatika", date: "2024-07-14", status: "Menunggu" },
-  { id: "VC-2024-0039", name: "Sarah Mawla", major: "Teknik Informatika", date: "2024-07-14", status: "Terbit" },
-];
-
 function AdminOverview() {
+  useChain();
+  const students = listStudentsWithStatus();
+  const certs = listCertificates();
+  const waiting = students.filter((s) => s.status === "Menunggu").length;
+
+  const stats = [
+    { label: "Total Mahasiswa", value: String(students.length), icon: Users, delta: "Dataset wisudawan aktif" },
+    { label: "Sertifikat Terbit", value: String(certs.length), icon: FileCheck2, delta: "Tercatat di blockchain" },
+    { label: "Menunggu Penerbitan", value: String(waiting), icon: Clock, delta: "Belum dikonfirmasi admin" },
+    { label: "Verifikasi (simulasi)", value: String(certs.length * 17 || 0), icon: TrendingUp, delta: "Estimasi 30 hari" },
+  ];
+
+  const recent = certs.slice(0, 6);
+
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -55,30 +56,34 @@ function AdminOverview() {
           <Button variant="ghost" size="sm" asChild><Link to="/admin/minted">Lihat semua</Link></Button>
         </CardHeader>
         <CardContent className="px-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID Sertifikat</TableHead>
-                <TableHead>Nama</TableHead>
-                <TableHead>Program Studi</TableHead>
-                <TableHead>Tanggal</TableHead>
-                <TableHead className="text-right">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recent.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell className="font-mono text-xs">{r.id}</TableCell>
-                  <TableCell className="font-medium">{r.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{r.major}</TableCell>
-                  <TableCell className="text-muted-foreground">{r.date}</TableCell>
-                  <TableCell className="text-right">
-                    <Badge variant={r.status === "Terbit" ? "default" : "secondary"}>{r.status}</Badge>
-                  </TableCell>
+          {recent.length === 0 ? (
+            <div className="p-8 text-center text-sm text-muted-foreground">
+              Belum ada penerbitan. Mulai dari menu <em>Terbitkan Sertifikat</em>.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID Sertifikat</TableHead>
+                  <TableHead>Nama</TableHead>
+                  <TableHead>Program Studi</TableHead>
+                  <TableHead>Tanggal</TableHead>
+                  <TableHead className="text-right">Status</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {recent.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-mono text-xs">{r.id}</TableCell>
+                    <TableCell className="font-medium">{r.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{r.major}</TableCell>
+                    <TableCell className="text-muted-foreground">{r.graduation}</TableCell>
+                    <TableCell className="text-right"><Badge>Terbit</Badge></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
