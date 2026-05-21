@@ -3,11 +3,11 @@ import { PublicNav, useConnectedWallet, setConnectedWallet } from "@/components/
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, Download, Share2, FileCheck2, GraduationCap, ExternalLink, Copy } from "lucide-react";
+import { Wallet, Download, Share2, FileCheck2, GraduationCap, ExternalLink, Copy, ScrollText } from "lucide-react";
 import { toast } from "sonner";
 import { getOwnedCertificatesByWallet } from "@/lib/certificate-service";
 import { useChain } from "@/lib/chain-store";
-import { findStudentByWallet, type Certificate } from "@/lib/mock-data";
+import { findStudentByWallet, type Certificate, type CertificateDoc } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/dashboard")({
   component: StudentDashboard,
