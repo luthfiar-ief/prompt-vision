@@ -33,6 +33,12 @@ export const STUDENTS: Student[] = [
   { no: 20, nim: "G.231.23.0177", name: "RATNASARI",                     sesi: "Sore", wallet: "0x70K123Ratnasari0177",    major: "Teknik Informatika" },
 ];
 
+export type CertificateDoc = {
+  hash: string;
+  name: string;
+  dataUrl: string; // base64 data URL untuk simulasi unduh
+};
+
 export type Certificate = {
   id: string;
   nim: string;
@@ -41,6 +47,9 @@ export type Certificate = {
   graduation: string;
   tx: string;
   wallet: string;
+  ijazah: CertificateDoc;
+  transkrip: CertificateDoc;
+  // alias untuk kompatibilitas hash verifikasi publik (cocokkan via PDF ijazah)
   pdfHash?: string;
   pdfName?: string;
   issuedAt: string;

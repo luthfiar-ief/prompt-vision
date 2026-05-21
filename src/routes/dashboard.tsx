@@ -3,11 +3,11 @@ import { PublicNav, useConnectedWallet, setConnectedWallet } from "@/components/
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, Download, Share2, FileCheck2, GraduationCap, ExternalLink, Copy } from "lucide-react";
+import { Wallet, Download, Share2, FileCheck2, GraduationCap, ExternalLink, Copy, ScrollText } from "lucide-react";
 import { toast } from "sonner";
 import { getOwnedCertificatesByWallet } from "@/lib/certificate-service";
 import { useChain } from "@/lib/chain-store";
-import { findStudentByWallet, type Certificate } from "@/lib/mock-data";
+import { findStudentByWallet, type Certificate, type CertificateDoc } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/dashboard")({
   component: StudentDashboard,
@@ -36,18 +36,18 @@ function StudentDashboard() {
     toast.success("Tautan verifikasi disalin", { description: url });
   };
 
-  const downloadPdf = (c: Certificate) => {
-    const blob = new Blob(
-      [`Sertifikat VeriChain\n\nID: ${c.id}\nNama: ${c.name}\nNIM: ${c.nim}\nProgram: ${c.major}\nLulus: ${c.graduation}\nTx: ${c.tx}\nWallet: ${c.wallet}\n`],
-      { type: "application/pdf" }
-    );
-    const url = URL.createObjectURL(blob);
+  const downloadDoc = (doc: CertificateDoc | undefined, fallbackName: string) => {
+    if (!doc?.dataUrl) {
+      toast.error("Berkas belum tersedia");
+      return;
+    }
     const a = document.createElement("a");
-    a.href = url;
-    a.download = `${c.id}.pdf`;
+    a.href = doc.dataUrl;
+    a.download = doc.name || fallbackName;
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Sertifikat diunduh");
+    a.remove();
+    toast.success(`${fallbackName} diunduh`);
   };
 
   return (
@@ -102,31 +102,15 @@ function StudentDashboard() {
             untuk mengkonfirmasi proses penerbitan ijazah Anda.
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-8">
             {certs.map((c: Certificate) => (
-              <Card key={c.id} className="overflow-hidden border-border/80">
-                <div className="flex items-center gap-3 border-b border-border/60 bg-muted/30 px-5 py-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                    <FileCheck2 className="h-4 w-4" />
+              <div key={c.id} className="space-y-3">
+                <div className="flex flex-wrap items-end justify-between gap-2 border-b border-border/60 pb-2">
+                  <div>
+                    <h2 className="text-lg font-semibold">{c.major}</h2>
+                    <p className="font-mono text-[11px] text-muted-foreground">{c.id} • Lulus {c.graduation}</p>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-semibold">{c.major}</div>
-                    <div className="font-mono text-[11px] text-muted-foreground">{c.id}</div>
-                  </div>
-                  <Badge className="bg-success/15 text-success hover:bg-success/15">On-chain</Badge>
-                </div>
-                <CardContent className="p-5">
-                  <dl className="grid grid-cols-2 gap-3 text-sm">
-                    <div><dt className="text-xs text-muted-foreground">Nama</dt><dd className="font-medium">{c.name}</dd></div>
-                    <div><dt className="text-xs text-muted-foreground">NIM</dt><dd className="font-mono">{c.nim}</dd></div>
-                    <div><dt className="text-xs text-muted-foreground">Tanggal Lulus</dt><dd>{c.graduation}</dd></div>
-                    <div><dt className="text-xs text-muted-foreground">Hash PDF</dt><dd className="truncate font-mono text-xs text-primary">{c.pdfHash ? c.pdfHash.slice(0, 18) + "…" : "—"}</dd></div>
-                    <div className="col-span-2"><dt className="text-xs text-muted-foreground">Transaksi</dt><dd className="truncate font-mono text-xs text-primary">{c.tx}</dd></div>
-                  </dl>
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    <Button size="sm" onClick={() => downloadPdf(c)} className="gap-1.5">
-                      <Download className="h-3.5 w-3.5" /> Unduh
-                    </Button>
+                  <div className="flex flex-wrap gap-2">
                     <Button size="sm" variant="outline" onClick={() => copyLink(c.id)} className="gap-1.5">
                       <Share2 className="h-3.5 w-3.5" /> Salin tautan verifikasi
                     </Button>
@@ -136,8 +120,25 @@ function StudentDashboard() {
                       </Link>
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <DocCard
+                    title="Ijazah"
+                    icon={<FileCheck2 className="h-4 w-4" />}
+                    doc={c.ijazah}
+                    cert={c}
+                    onDownload={() => downloadDoc(c.ijazah, `Ijazah-${c.id}.pdf`)}
+                  />
+                  <DocCard
+                    title="Transkrip Nilai"
+                    icon={<ScrollText className="h-4 w-4" />}
+                    doc={c.transkrip}
+                    cert={c}
+                    onDownload={() => downloadDoc(c.transkrip, `Transkrip-${c.id}.pdf`)}
+                  />
+                </div>
+              </div>
             ))}
           </div>
         )}
@@ -157,5 +158,51 @@ function StudentDashboard() {
         )}
       </section>
     </div>
+  );
+}
+
+function DocCard({
+  title, icon, doc, cert, onDownload,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  doc: CertificateDoc | undefined;
+  cert: Certificate;
+  onDownload: () => void;
+}) {
+  return (
+    <Card className="overflow-hidden border-border/80">
+      <div className="flex items-center gap-3 border-b border-border/60 bg-muted/30 px-5 py-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground">
+          {icon}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-semibold">{title}</div>
+          <div className="truncate font-mono text-[11px] text-muted-foreground">
+            {doc?.name ?? "Belum tersedia"}
+          </div>
+        </div>
+        <Badge className="bg-success/15 text-success hover:bg-success/15">On-chain</Badge>
+      </div>
+      <CardContent className="p-5">
+        <dl className="grid grid-cols-2 gap-3 text-sm">
+          <div><dt className="text-xs text-muted-foreground">Nama</dt><dd className="font-medium">{cert.name}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">NIM</dt><dd className="font-mono">{cert.nim}</dd></div>
+          <div className="col-span-2">
+            <dt className="text-xs text-muted-foreground">Hash {title}</dt>
+            <dd className="truncate font-mono text-xs text-primary">{doc?.hash ? doc.hash.slice(0, 32) + "…" : "—"}</dd>
+          </div>
+          <div className="col-span-2">
+            <dt className="text-xs text-muted-foreground">Transaksi</dt>
+            <dd className="truncate font-mono text-xs text-primary">{cert.tx}</dd>
+          </div>
+        </dl>
+        <div className="mt-5">
+          <Button size="sm" onClick={onDownload} disabled={!doc?.dataUrl} className="gap-1.5">
+            <Download className="h-3.5 w-3.5" /> Unduh {title}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

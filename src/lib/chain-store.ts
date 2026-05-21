@@ -1,20 +1,19 @@
 // "Blockchain" simulasi yang disimpan di localStorage agar konsisten
 // antara halaman Admin (penerbit) dan halaman publik (Verifikasi & Sertifikat Saya).
-//
-// Saat backend asli sudah jadi, ganti store ini dengan panggilan API.
 
 import { useSyncExternalStore } from "react";
 import {
   STUDENTS,
   findStudentByNim,
   type Certificate,
+  type CertificateDoc,
   type Student,
 } from "./mock-data";
 
-const STORAGE_KEY = "verichain.chain.v1";
+const STORAGE_KEY = "verichain.chain.v2";
 
 type ChainState = {
-  certificates: Record<string, Certificate>; // key: cert id
+  certificates: Record<string, Certificate>;
 };
 
 const listeners = new Set<() => void>();
@@ -33,14 +32,17 @@ function load(): ChainState {
 
 function persist() {
   if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {
+    console.warn("Gagal menyimpan chain state (kemungkinan kuota localStorage penuh)", e);
+  }
 }
 
 function emit() {
   listeners.forEach((l) => l());
 }
 
-// React across tabs
 if (typeof window !== "undefined") {
   window.addEventListener("storage", (e) => {
     if (e.key === STORAGE_KEY) {
@@ -67,7 +69,7 @@ export function useChain() {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-// ---- Hashing helper (SHA-256 of file bytes) ----
+// ---- Helpers ----
 export async function hashFile(file: File): Promise<string> {
   const buf = await file.arrayBuffer();
   const digest = await crypto.subtle.digest("SHA-256", buf);
@@ -76,8 +78,21 @@ export async function hashFile(file: File): Promise<string> {
     .join("");
 }
 
+export function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+export async function fileToDoc(file: File): Promise<CertificateDoc> {
+  const [hash, dataUrl] = await Promise.all([hashFile(file), fileToDataUrl(file)]);
+  return { hash, name: file.name, dataUrl };
+}
+
 function shortTx(seed: string) {
-  // Tx hash pseudo-deterministik dari hash file/nim
   const base = seed + Date.now().toString(16);
   let h = 0;
   for (let i = 0; i < base.length; i++) h = (h * 31 + base.charCodeAt(i)) | 0;
@@ -107,7 +122,9 @@ export function getCertificateById(id: string): Certificate | undefined {
 
 export function getCertificateByPdfHash(hash: string): Certificate | undefined {
   const h = hash.toLowerCase();
-  return Object.values(state.certificates).find((c) => c.pdfHash === h);
+  return Object.values(state.certificates).find(
+    (c) => c.ijazah?.hash === h || c.transkrip?.hash === h || c.pdfHash === h
+  );
 }
 
 export function getCertificatesByWallet(wallet: string): Certificate[] {
@@ -115,6 +132,15 @@ export function getCertificatesByWallet(wallet: string): Certificate[] {
   return Object.values(state.certificates).filter(
     (c) => c.wallet.toLowerCase() === w
   );
+}
+
+export function getCertificateByNim(nim: string): Certificate | undefined {
+  const n = nim.trim().toUpperCase();
+  return Object.values(state.certificates).find((c) => c.nim.toUpperCase() === n);
+}
+
+export function hasCertificateForNim(nim: string): boolean {
+  return !!getCertificateByNim(nim);
 }
 
 export type StudentWithStatus = Student & {
@@ -138,16 +164,14 @@ export type IssueInput = {
   nim: string;
   major?: string;
   graduation: string;
-  pdfHash?: string;
-  pdfName?: string;
+  ijazah: CertificateDoc;
+  transkrip: CertificateDoc;
 };
 
 export function issueCertificate(input: IssueInput): Certificate {
   const student = findStudentByNim(input.nim);
   if (!student) {
-    throw new Error(
-      `NIM ${input.nim} tidak terdaftar di daftar mahasiswa kampus`
-    );
+    throw new Error(`NIM ${input.nim} tidak terdaftar di daftar mahasiswa kampus`);
   }
   const year = new Date(input.graduation || new Date()).getFullYear();
   const id = makeCertId(student.nim, year);
@@ -157,10 +181,12 @@ export function issueCertificate(input: IssueInput): Certificate {
     name: student.name,
     major: input.major?.trim() || student.major,
     graduation: input.graduation,
-    tx: shortTx(input.pdfHash ?? student.nim),
+    tx: shortTx(input.ijazah.hash),
     wallet: student.wallet,
-    pdfHash: input.pdfHash,
-    pdfName: input.pdfName,
+    ijazah: input.ijazah,
+    transkrip: input.transkrip,
+    pdfHash: input.ijazah.hash,
+    pdfName: input.ijazah.name,
     issuedAt: new Date().toISOString(),
   };
   state = {
