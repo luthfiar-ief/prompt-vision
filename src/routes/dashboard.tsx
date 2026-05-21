@@ -160,3 +160,49 @@ function StudentDashboard() {
     </div>
   );
 }
+
+function DocCard({
+  title, icon, doc, cert, onDownload,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  doc: CertificateDoc | undefined;
+  cert: Certificate;
+  onDownload: () => void;
+}) {
+  return (
+    <Card className="overflow-hidden border-border/80">
+      <div className="flex items-center gap-3 border-b border-border/60 bg-muted/30 px-5 py-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground">
+          {icon}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-semibold">{title}</div>
+          <div className="truncate font-mono text-[11px] text-muted-foreground">
+            {doc?.name ?? "Belum tersedia"}
+          </div>
+        </div>
+        <Badge className="bg-success/15 text-success hover:bg-success/15">On-chain</Badge>
+      </div>
+      <CardContent className="p-5">
+        <dl className="grid grid-cols-2 gap-3 text-sm">
+          <div><dt className="text-xs text-muted-foreground">Nama</dt><dd className="font-medium">{cert.name}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">NIM</dt><dd className="font-mono">{cert.nim}</dd></div>
+          <div className="col-span-2">
+            <dt className="text-xs text-muted-foreground">Hash {title}</dt>
+            <dd className="truncate font-mono text-xs text-primary">{doc?.hash ? doc.hash.slice(0, 32) + "…" : "—"}</dd>
+          </div>
+          <div className="col-span-2">
+            <dt className="text-xs text-muted-foreground">Transaksi</dt>
+            <dd className="truncate font-mono text-xs text-primary">{cert.tx}</dd>
+          </div>
+        </dl>
+        <div className="mt-5">
+          <Button size="sm" onClick={onDownload} disabled={!doc?.dataUrl} className="gap-1.5">
+            <Download className="h-3.5 w-3.5" /> Unduh {title}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
