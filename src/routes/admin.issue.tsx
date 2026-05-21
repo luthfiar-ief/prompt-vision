@@ -1,18 +1,23 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { z } from "zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Upload, Sparkles, FileText, CheckCircle2 } from "lucide-react";
+import { Upload, Sparkles, FileText, CheckCircle2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { issueCertificate } from "@/lib/certificate-service";
-import { hashFile } from "@/lib/chain-store";
+import { fileToDoc, hasCertificateForNim, useChain } from "@/lib/chain-store";
 import { findStudentByNim, STUDENTS } from "@/lib/mock-data";
+
+type IssueSearch = { nim?: string };
 
 export const Route = createFileRoute("/admin/issue")({
   component: IssuePage,
+  validateSearch: (s: Record<string, unknown>): IssueSearch => ({
+    nim: typeof s.nim === "string" ? s.nim : undefined,
+  }),
 });
 
 const issueSchema = z.object({
@@ -24,18 +29,46 @@ const issueSchema = z.object({
   graduation: z.string().min(1, "Tanggal lulus wajib diisi"),
 });
 
-const MAX_PDF_BYTES = 10 * 1024 * 1024;
+const MAX_PDF_BYTES = 3 * 1024 * 1024; // 3MB tiap berkas (simulasi localStorage)
 
 function IssuePage() {
-  const [form, setForm] = useState({ nim: "", major: "Teknik Informatika", graduation: "" });
-  const [file, setFile] = useState<File | null>(null);
+  useChain();
+  const navigate = useNavigate();
+  const { nim: initialNim } = Route.useSearch();
+  const [form, setForm] = useState({
+    nim: initialNim ?? "",
+    major: "Teknik Informatika",
+    graduation: "",
+  });
+  const [ijazah, setIjazah] = useState<File | null>(null);
+  const [transkrip, setTranskrip] = useState<File | null>(null);
   const [minting, setMinting] = useState(false);
   const [tx, setTx] = useState<string | null>(null);
 
   const student = findStudentByNim(form.nim);
+  const alreadyIssued = useMemo(
+    () => (student ? hasCertificateForNim(student.nim) : false),
+    [student]
+  );
 
   const update = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((p) => ({ ...p, [k]: e.target.value }));
+
+  const pickFile = (setter: (f: File | null) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0] ?? null;
+    if (!f) return setter(null);
+    if (f.type !== "application/pdf") return toast.error("Berkas harus berupa PDF");
+    if (f.size > MAX_PDF_BYTES) return toast.error("Ukuran PDF melebihi 3MB");
+    setter(f);
+  };
+
+  const allFilled =
+    !!form.nim.trim() &&
+    !!form.major.trim() &&
+    !!form.graduation.trim() &&
+    !!ijazah &&
+    !!transkrip &&
+    !alreadyIssued;
 
   const mint = async () => {
     const parsed = issueSchema.safeParse(form);
@@ -47,24 +80,31 @@ function IssuePage() {
       toast.error("NIM tidak terdaftar di daftar mahasiswa kampus");
       return;
     }
-    if (!file) { toast.error("Unggah berkas PDF sertifikat"); return; }
-    if (file.type !== "application/pdf") { toast.error("Berkas harus berupa PDF"); return; }
-    if (file.size > MAX_PDF_BYTES) { toast.error("Ukuran PDF melebihi 10MB"); return; }
+    if (hasCertificateForNim(parsed.data.nim)) {
+      toast.error("Sertifikat untuk NIM ini sudah pernah diterbitkan");
+      return;
+    }
+    if (!ijazah) return toast.error("Unggah berkas PDF Ijazah");
+    if (!transkrip) return toast.error("Unggah berkas PDF Transkrip Nilai");
 
     setMinting(true);
     try {
-      const pdfHash = await hashFile(file);
+      const [ijazahDoc, transkripDoc] = await Promise.all([
+        fileToDoc(ijazah),
+        fileToDoc(transkrip),
+      ]);
       const cert = await issueCertificate({
         nim: parsed.data.nim,
         major: parsed.data.major,
         graduation: parsed.data.graduation,
-        pdfHash,
-        pdfName: file.name,
+        ijazah: ijazahDoc,
+        transkrip: transkripDoc,
       });
       setTx(cert.tx);
       toast.success("Tercatat di blockchain", {
         description: `${cert.id} • ${cert.tx.slice(0, 18)}…`,
       });
+      setTimeout(() => navigate({ to: "/admin/minted" }), 800);
     } catch (err) {
       toast.error("Gagal menerbitkan", {
         description: err instanceof Error ? err.message : "Terjadi kesalahan",
@@ -79,7 +119,7 @@ function IssuePage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Terbitkan Sertifikat</h1>
         <p className="text-sm text-muted-foreground">
-          Pilih mahasiswa berdasarkan NIM, unggah PDF ijazah, lalu terbitkan ke blockchain. Hash PDF akan disimpan untuk verifikasi publik.
+          Pilih mahasiswa berdasarkan NIM, unggah PDF Ijazah & Transkrip Nilai, lalu terbitkan ke blockchain. Hash kedua berkas akan disimpan untuk verifikasi publik.
         </p>
       </div>
 
@@ -113,46 +153,42 @@ function IssuePage() {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="major">Program studi</Label>
-            <Input id="major" value={form.major} onChange={update("major")} placeholder="Teknik Informatika" maxLength={100} />
+            <Input id="major" value={form.major} onChange={update("major")} placeholder="Teknik Informatika" maxLength={100} required />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor="grad">Tanggal lulus</Label>
-            <Input id="grad" type="date" value={form.graduation} onChange={update("graduation")} />
+            <Input id="grad" type="date" value={form.graduation} onChange={update("graduation")} required />
           </div>
+
+          {student && alreadyIssued && (
+            <div className="sm:col-span-2 flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2.5 text-sm text-warning-foreground">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+              <div>
+                <p className="font-medium text-amber-700">Sudah pernah diterbitkan</p>
+                <p className="text-xs text-amber-700/80">
+                  Data sertifikat mahasiswa dengan NIM <span className="font-mono">{student.nim}</span> sudah diterbitkan sebelumnya. Periksa di menu Sertifikat Terbit.
+                </p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader><CardTitle className="text-base">Berkas Sertifikat</CardTitle></CardHeader>
-        <CardContent>
-          <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/30 p-8 text-center transition hover:border-primary/50 hover:bg-primary/5">
-            <input
-              type="file"
-              accept="application/pdf"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0] ?? null;
-                if (f && f.size > MAX_PDF_BYTES) {
-                  toast.error("Ukuran PDF melebihi 10MB");
-                  return;
-                }
-                setFile(f);
-              }}
-            />
-            {file ? (
-              <>
-                <FileText className="mb-2 h-6 w-6 text-primary" />
-                <p className="text-sm font-medium">{file.name}</p>
-                <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB — klik untuk mengganti</p>
-              </>
-            ) : (
-              <>
-                <Upload className="mb-2 h-6 w-6 text-muted-foreground" />
-                <p className="text-sm font-medium">Unggah PDF ijazah</p>
-                <p className="text-xs text-muted-foreground">PDF maksimal 10MB — akan di-hash SHA-256</p>
-              </>
-            )}
-          </label>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <FileDrop
+            label="Unggah PDF Ijazah"
+            hint="PDF maksimal 3MB — akan di-hash SHA-256"
+            file={ijazah}
+            onPick={pickFile(setIjazah)}
+          />
+          <FileDrop
+            label="Unggah PDF Transkrip Nilai"
+            hint="PDF maksimal 3MB — akan di-hash SHA-256"
+            file={transkrip}
+            onPick={pickFile(setTranskrip)}
+          />
         </CardContent>
       </Card>
 
@@ -163,11 +199,36 @@ function IssuePage() {
             <span className="font-mono text-xs">{tx.slice(0, 18)}…</span>
           </div>
         )}
-        <Button size="lg" onClick={mint} disabled={minting} className="gap-2">
+        <Button size="lg" onClick={mint} disabled={minting || !allFilled} className="gap-2">
           <Sparkles className="h-4 w-4" />
           {minting ? "Menerbitkan…" : "Terbitkan ke Blockchain"}
         </Button>
       </div>
     </div>
+  );
+}
+
+function FileDrop({
+  label, hint, file, onPick,
+}: {
+  label: string; hint: string; file: File | null; onPick: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+  return (
+    <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/30 p-6 text-center transition hover:border-primary/50 hover:bg-primary/5">
+      <input type="file" accept="application/pdf" className="hidden" onChange={onPick} />
+      {file ? (
+        <>
+          <FileText className="mb-2 h-6 w-6 text-primary" />
+          <p className="text-sm font-medium">{file.name}</p>
+          <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB — klik untuk mengganti</p>
+        </>
+      ) : (
+        <>
+          <Upload className="mb-2 h-6 w-6 text-muted-foreground" />
+          <p className="text-sm font-medium">{label}</p>
+          <p className="text-xs text-muted-foreground">{hint}</p>
+        </>
+      )}
+    </label>
   );
 }
