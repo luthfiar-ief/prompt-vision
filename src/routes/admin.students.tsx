@@ -1,13 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Sparkles, Copy } from "lucide-react";
+import { Search, Sparkles, Copy, FileText } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { listStudentsWithStatus, issueCertificate, useChain } from "@/lib/chain-store";
+import { listStudentsWithStatus, useChain } from "@/lib/chain-store";
 
 export const Route = createFileRoute("/admin/students")({
   component: Students,
@@ -15,28 +15,15 @@ export const Route = createFileRoute("/admin/students")({
 
 function Students() {
   useChain();
+  const navigate = useNavigate();
   const [q, setQ] = useState("");
-  const [busyNim, setBusyNim] = useState<string | null>(null);
   const students = listStudentsWithStatus();
   const filtered = students.filter((d) =>
     `${d.name} ${d.nim} ${d.wallet}`.toLowerCase().includes(q.toLowerCase())
   );
 
-  const quickIssue = (nim: string, name: string) => {
-    setBusyNim(nim);
-    try {
-      const cert = issueCertificate({
-        nim,
-        graduation: new Date().toISOString().slice(0, 10),
-      });
-      toast.success(`Sertifikat ${name} diterbitkan`, {
-        description: `${cert.id} • ${cert.tx.slice(0, 18)}…`,
-      });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Gagal menerbitkan");
-    } finally {
-      setBusyNim(null);
-    }
+  const goIssue = (nim: string) => {
+    navigate({ to: "/admin/issue", search: { nim } });
   };
 
   const copyWallet = (w: string) => {
@@ -53,7 +40,7 @@ function Students() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Daftar Mahasiswa</h1>
           <p className="text-sm text-muted-foreground">
-            Telusuri data wisudawan dan terbitkan sertifikat yang belum dikonfirmasi.
+            Telusuri data wisudawan dan terbitkan sertifikat melalui formulir penerbitan.
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -111,14 +98,18 @@ function Students() {
                         size="sm"
                         variant="outline"
                         className="gap-1.5"
-                        disabled={busyNim === s.nim}
-                        onClick={() => quickIssue(s.nim, s.name)}
+                        onClick={() => goIssue(s.nim)}
                       >
                         <Sparkles className="h-3.5 w-3.5" />
-                        {busyNim === s.nim ? "Menerbitkan…" : "Terbitkan"}
+                        Terbitkan
                       </Button>
                     ) : (
-                      <span className="font-mono text-[11px] text-muted-foreground">{s.certId}</span>
+                      <Button asChild size="sm" variant="ghost" className="gap-1.5">
+                        <Link to="/admin/minted">
+                          <FileText className="h-3.5 w-3.5" />
+                          <span className="font-mono text-[11px]">{s.certId}</span>
+                        </Link>
+                      </Button>
                     )}
                   </TableCell>
                 </TableRow>
