@@ -93,16 +93,19 @@ export async function fileToDoc(file: File): Promise<CertificateDoc> {
   return { hash, name: file.name, dataUrl };
 }
 
+// Membuat signature transaksi Solana simulasi (Base58, 64–88 karakter).
+// Pada implementasi nyata ini berasal dari `Connection.sendTransaction()` ke
+// Program (smart contract) Solana yang menyimpan on-chain metadata sertifikat.
 function shortTx(seed: string) {
-  const base = seed + Date.now().toString(16);
+  const alpha = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+  const base = seed + Date.now().toString(16) + Math.random().toString(16);
   let h = 0;
-  for (let i = 0; i < base.length; i++) h = (h * 31 + base.charCodeAt(i)) | 0;
-  const hex = Math.abs(h).toString(16).padStart(8, "0");
-  return (
-    "0x" +
-    hex +
-    Array.from({ length: 6 }, () => Math.random().toString(16).slice(2, 6)).join("")
-  );
+  for (let i = 0; i < base.length; i++) h = (h * 131 + base.charCodeAt(i)) | 0;
+  let out = "";
+  let n = Math.abs(h) >>> 0;
+  for (let i = 0; i < 8; i++) { out += alpha[n % 58]; n = Math.floor(n / 58) + 7; }
+  while (out.length < 64) out += alpha[Math.floor(Math.random() * 58)];
+  return out.slice(0, 64);
 }
 
 function makeCertId(nim: string, year: number) {
