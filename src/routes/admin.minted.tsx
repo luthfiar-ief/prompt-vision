@@ -17,7 +17,7 @@ function Minted() {
     <div className="mx-auto max-w-7xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Sertifikat Terbit</h1>
-        <p className="text-sm text-muted-foreground">Seluruh sertifikat yang telah tercatat di blockchain.</p>
+        <p className="text-sm text-muted-foreground">Seluruh sertifikat yang telah tercatat sebagai akun on-chain di jaringan Solana.</p>
       </div>
       <Card>
         <CardContent className="p-0">
@@ -33,7 +33,7 @@ function Minted() {
                   <TableHead>Nama</TableHead>
                   <TableHead>Program Studi</TableHead>
                   <TableHead>Tanggal Lulus</TableHead>
-                  <TableHead>Hash Transaksi</TableHead>
+                  <TableHead>Signature (Solana)</TableHead>
                   <TableHead className="text-right">Status</TableHead>
                 </TableRow>
               </TableHeader>
