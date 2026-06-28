@@ -129,10 +129,9 @@ export function getCertificateByPdfHash(hash: string): Certificate | undefined {
 }
 
 export function getCertificatesByWallet(wallet: string): Certificate[] {
-  const w = wallet.trim().toLowerCase();
-  return Object.values(state.certificates).filter(
-    (c) => c.wallet.toLowerCase() === w
-  );
+  // Public Key Solana bersifat case-sensitive (Base58) — bandingkan apa adanya.
+  const w = wallet.trim();
+  return Object.values(state.certificates).filter((c) => c.wallet === w);
 }
 
 export function getCertificateByNim(nim: string): Certificate | undefined {
