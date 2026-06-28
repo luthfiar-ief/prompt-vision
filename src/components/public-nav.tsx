@@ -5,6 +5,12 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { VeriChainLogo } from "./verichain-logo";
 import { findStudentByWallet } from "@/lib/mock-data";
+import {
+  connectPhantom,
+  disconnectPhantom,
+  getPhantomProvider,
+  PHANTOM_INSTALL_URL,
+} from "@/lib/phantom";
 
 const WALLET_KEY = "verichain.wallet";
 
@@ -32,14 +38,52 @@ export function setConnectedWallet(addr: string | null) {
   window.dispatchEvent(new Event("verichain:wallet"));
 }
 
+/**
+ * Coba hubungkan Phantom Wallet asli (window.solana).
+ * Mengembalikan Public Key Base58 bila sukses, atau null bila gagal.
+ * Toast peringatan tampil otomatis bila Phantom belum terpasang.
+ */
+export async function connectPhantomWallet(): Promise<string | null> {
+  if (!getPhantomProvider()) {
+    toast.error("Phantom Wallet tidak terdeteksi", {
+      description: "Silakan instal ekstensi Phantom Wallet di browser Anda terlebih dahulu.",
+      action: {
+        label: "Instal",
+        onClick: () => window.open(PHANTOM_INSTALL_URL, "_blank", "noopener"),
+      },
+    });
+    return null;
+  }
+  try {
+    const pubkey = await connectPhantom();
+    setConnectedWallet(pubkey);
+    const student = findStudentByWallet(pubkey);
+    if (student) {
+      toast.success(`Selamat datang, ${student.name}`, {
+        description: "Phantom Wallet terhubung ke akun mahasiswa Anda.",
+      });
+    } else {
+      toast.success("Phantom Wallet terhubung", {
+        description: `${pubkey.slice(0, 6)}…${pubkey.slice(-4)} • Akun ini belum terdaftar pada registri kampus.`,
+      });
+    }
+    return pubkey;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Pengguna membatalkan koneksi";
+    toast.error("Gagal menghubungkan Phantom", { description: msg });
+    return null;
+  }
+}
+
 export function ConnectWalletButton() {
   const addr = useConnectedWallet();
   const navigate = useNavigate();
   const route = useRouterState({ select: (r) => r.location.pathname });
+  const [busy, setBusy] = useState(false);
 
   if (addr) {
     const student = findStudentByWallet(addr);
-    const short = addr.slice(0, 6) + "…" + addr.slice(-4);
+    const short = addr.slice(0, 4) + "…" + addr.slice(-4);
     return (
       <div className="flex items-center gap-2">
         <Button asChild variant="outline" size="sm" className="gap-2">
@@ -51,12 +95,13 @@ export function ConnectWalletButton() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => {
+          onClick={async () => {
+            await disconnectPhantom();
             setConnectedWallet(null);
-            toast.message(`Wallet ${student?.name ?? "pengguna"} diputus`);
+            toast.message(`Phantom ${student?.name ?? "pengguna"} diputus`);
             if (route.startsWith("/dashboard")) navigate({ to: "/" });
           }}
-          aria-label="Putuskan wallet"
+          aria-label="Putuskan Phantom Wallet"
         >
           <LogOut className="h-4 w-4" />
         </Button>
@@ -65,11 +110,20 @@ export function ConnectWalletButton() {
   }
 
   return (
-    <Button asChild variant="outline" size="sm" className="gap-2">
-      <Link to="/login">
-        <Wallet className="h-4 w-4" />
-        Hubungkan Wallet
-      </Link>
+    <Button
+      variant="outline"
+      size="sm"
+      className="gap-2"
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        const pk = await connectPhantomWallet();
+        setBusy(false);
+        if (pk && findStudentByWallet(pk)) navigate({ to: "/dashboard" });
+      }}
+    >
+      <Wallet className="h-4 w-4" />
+      {busy ? "Menghubungkan…" : "Hubungkan Phantom"}
     </Button>
   );
 }
@@ -84,7 +138,7 @@ export function PublicNav() {
           </div>
           <div className="leading-tight">
             <div className="text-sm font-semibold tracking-tight">VeriChain</div>
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Registri Kampus</div>
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Registri Kampus · Solana</div>
           </div>
         </Link>
         <nav className="hidden items-center gap-6 text-sm font-medium text-muted-foreground md:flex">
