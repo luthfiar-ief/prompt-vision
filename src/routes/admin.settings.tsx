@@ -14,7 +14,7 @@ function Settings() {
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Pengaturan</h1>
-        <p className="text-sm text-muted-foreground">Konfigurasi registri, kontrak, dan jaringan.</p>
+        <p className="text-sm text-muted-foreground">Konfigurasi registri, Program Solana, dan jaringan.</p>
       </div>
       <Card>
         <CardHeader><CardTitle className="text-base">Kampus</CardTitle></CardHeader>
@@ -24,10 +24,10 @@ function Settings() {
         </CardContent>
       </Card>
       <Card>
-        <CardHeader><CardTitle className="text-base">Blockchain</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">Jaringan Solana</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-1.5"><Label>Jaringan</Label><Input defaultValue="Polygon Mainnet" /></div>
-          <div className="space-y-1.5"><Label>Alamat kontrak</Label><Input defaultValue="0xA1b2C3d4E5F6…" className="font-mono" /></div>
+          <div className="space-y-1.5"><Label>Cluster</Label><Input defaultValue="Solana Devnet" /></div>
+          <div className="space-y-1.5"><Label>Program ID (Anchor)</Label><Input defaultValue="VeriCh4inProgrAm1111111111111111111111111111" className="font-mono" /></div>
           <div className="flex items-center justify-between rounded-md border border-border p-3">
             <div>
               <div className="text-sm font-medium">Terbitkan otomatis</div>
