@@ -10,7 +10,8 @@ import {
   type Student,
 } from "./mock-data";
 
-const STORAGE_KEY = "verichain.chain.v2";
+// Bumped ke v3: migrasi format wallet Ethereum → Solana (Base58, case-sensitive).
+const STORAGE_KEY = "verichain.chain.v3.solana";
 
 type ChainState = {
   certificates: Record<string, Certificate>;
